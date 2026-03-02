@@ -6,6 +6,11 @@ function esc(text = "") {
     .replaceAll('"', "&quot;");
 }
 
+function catClass(category = "") {
+  const normalized = String(category).toLowerCase().replace(/[^a-z0-9]+/g, "-") || "unknown";
+  return `cat-${normalized}`;
+}
+
 export function renderStats(node, stats) {
   node.textContent = `总题数: ${stats.total_cases} | 分类数: ${Object.keys(stats.by_category || {}).length} | 更新时间: ${stats.updated_at || "-"}`;
 }
@@ -18,6 +23,9 @@ export function renderCategoryList(node, counts, activeCategory, onClick) {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.textContent = `${name} (${count})`;
+    if (name !== "all") {
+      btn.classList.add(catClass(name));
+    }
     if (activeCategory === name) btn.classList.add("active");
     btn.addEventListener("click", () => onClick(name));
     li.appendChild(btn);
@@ -39,9 +47,13 @@ export function renderCaseList(node, cases, onSelect) {
   for (const item of cases) {
     const li = document.createElement("li");
     const btn = document.createElement("button");
+    const catCls = catClass(item.category);
     btn.innerHTML = `
       <div class="case-name">${esc(item.name)}</div>
-      <div class="case-meta">${esc(item.category)}/${esc(item.subcategory)} | ${esc(item.event || "-")} | ${esc(item.status || "todo")}</div>
+      <div class="case-meta">
+        <span class="cat-badge ${catCls}">${esc(item.category)}</span>
+        ${esc(item.subcategory)} | ${esc(item.event || "-")} | ${esc(item.status || "todo")}
+      </div>
     `;
     btn.addEventListener("click", () => onSelect(item));
     li.appendChild(btn);
@@ -57,6 +69,7 @@ export function renderCaseDetail(node, item, wpText) {
 
   const tags = (item.tags || []).slice(0, 6).map((t) => `<span class="chip">${esc(t)}</span>`).join("");
   const statusClass = `status-${(item.status || "todo").replace(/\s+/g, "_")}`;
+  const categoryClass = catClass(item.category);
   const wpCount = (item.wp_files || []).length;
   const scriptCount = (item.script_files || []).length;
   const challengeCount = (item.challenge_files || []).length;
@@ -64,7 +77,7 @@ export function renderCaseDetail(node, item, wpText) {
   node.innerHTML = `
     <h3>${esc(item.name)}</h3>
     <p>
-      <span class="chip">${esc(item.category)}/${esc(item.subcategory)}</span>
+      <span class="chip ${categoryClass}">${esc(item.category)}/${esc(item.subcategory)}</span>
       <span class="chip ${statusClass}">${esc(item.status || "todo")}</span>
       ${tags}
     </p>

@@ -1,6 +1,7 @@
 import {
   addArtifactUpload,
   fetchCatalog,
+  fetchCategoryTree,
   fetchCurrentCase,
   fetchWpText,
   intakeChallengeUpload,
@@ -21,6 +22,8 @@ const els = {
   searchInput: document.getElementById("search-input"),
   statusFilter: document.getElementById("status-filter"),
   intakeForm: document.getElementById("intake-form"),
+  intakeCategory: document.getElementById("intake-category"),
+  intakeSubcategory: document.getElementById("intake-subcategory"),
   artifactForm: document.getElementById("artifact-form"),
   artifactCase: document.getElementById("artifact-case"),
   refreshCurrentBtn: document.getElementById("refresh-current-btn"),
@@ -34,6 +37,7 @@ const state = {
   activeCategory: "all",
   activeCase: null,
   currentCase: null,
+  categoryTree: {},
 };
 
 function nowTime() {
@@ -105,6 +109,51 @@ async function loadCurrentCase() {
   }
 }
 
+function renderIntakeCategorySelect() {
+  if (!els.intakeCategory) return;
+  const categories = Object.keys(state.categoryTree || {}).sort();
+  const current = els.intakeCategory.value || "auto";
+  els.intakeCategory.innerHTML = `<option value="auto">auto（自动识别）</option>`;
+  for (const cat of categories) {
+    const opt = document.createElement("option");
+    opt.value = cat;
+    opt.textContent = cat;
+    els.intakeCategory.appendChild(opt);
+  }
+  els.intakeCategory.value = categories.includes(current) ? current : "auto";
+}
+
+function renderIntakeSubcategorySelect() {
+  if (!els.intakeSubcategory || !els.intakeCategory) return;
+  const category = els.intakeCategory.value;
+  const options = state.categoryTree?.[category] || [];
+  const old = els.intakeSubcategory.value || "";
+  els.intakeSubcategory.innerHTML = `<option value="">自动选择</option>`;
+  for (const sub of options) {
+    const opt = document.createElement("option");
+    opt.value = sub;
+    opt.textContent = sub;
+    els.intakeSubcategory.appendChild(opt);
+  }
+  els.intakeSubcategory.disabled = category === "auto";
+  if (options.includes(old)) {
+    els.intakeSubcategory.value = old;
+  } else {
+    els.intakeSubcategory.value = "";
+  }
+}
+
+async function loadCategoryTree() {
+  try {
+    const data = await fetchCategoryTree();
+    state.categoryTree = data.categories || {};
+    renderIntakeCategorySelect();
+    renderIntakeSubcategorySelect();
+  } catch (err) {
+    appendLog(`加载分类树失败: ${err.message}`, true);
+  }
+}
+
 async function onSelectCase(item) {
   state.activeCase = item;
   if (els.artifactCase) {
@@ -153,10 +202,17 @@ async function submitIntake(event) {
     return;
   }
 
+  const category = String(formData.get("category") || "auto");
+  const subcategory = String(formData.get("subcategory") || "");
+  if (category === "auto" || !subcategory) {
+    formData.delete("subcategory");
+  }
+
   const data = await intakeChallengeUpload(formData);
   renderCurrentCase(data.current);
   appendLog(`题目已添加: ${data.current?.id || "-"}`);
   els.intakeForm.reset();
+  renderIntakeSubcategorySelect();
   await reloadCatalog();
 }
 
@@ -186,6 +242,7 @@ async function submitArtifact(event) {
 function wireEvents() {
   els.searchInput.addEventListener("input", refreshCaseList);
   els.statusFilter.addEventListener("change", refreshCaseList);
+  els.intakeCategory?.addEventListener("change", renderIntakeSubcategorySelect);
 
   els.intakeForm.addEventListener("submit", async (event) => {
     try {
@@ -222,6 +279,7 @@ function wireEvents() {
 async function bootstrap() {
   try {
     wireEvents();
+    await loadCategoryTree();
     await reloadCatalog();
     await loadCurrentCase();
     appendLog("页面已就绪");

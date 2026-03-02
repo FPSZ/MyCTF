@@ -33,6 +33,11 @@ export async function fetchCurrentCase() {
   return parseJson(resp);
 }
 
+export async function fetchCategoryTree() {
+  const resp = await fetch("/api/categories", { cache: "no-store" });
+  return parseJson(resp);
+}
+
 export async function intakeChallengeUpload(formData) {
   const resp = await fetch("/api/intake-upload", {
     method: "POST",

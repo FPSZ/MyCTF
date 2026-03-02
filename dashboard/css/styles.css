@@ -165,19 +165,26 @@ body {
 .case-meta {
   font-size: 12px;
   color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cat-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  background: #f2f6ff;
+  color: #3a4a6b;
 }
 
 .detail-panel {
   display: flex;
   flex-direction: column;
-}
-
-.add-panel-body {
-  padding: 10px;
-  display: grid;
-  gap: 10px;
-  overflow: auto;
-  max-height: calc(100vh - 110px);
 }
 
 .mini-form {
@@ -232,16 +239,29 @@ body {
   gap: 8px;
 }
 
+.add-section {
+  margin: 0 10px 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.add-section-title {
+  font-weight: 600;
+  margin: 2px 2px 10px;
+}
+
+.add-section-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
 .case-detail {
   padding: 12px;
   overflow: auto;
   max-height: calc(100vh - 110px);
-}
-
-.compact-detail {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  max-height: 320px;
 }
 
 .chip {
@@ -263,6 +283,86 @@ body {
   color: #8a4f00;
   border-color: #ffcb80;
   background: #fff4e5;
+}
+
+.category-list button.cat-web,
+.cat-badge.cat-web,
+.chip.cat-web {
+  border-color: #79c3c3;
+  background: #e8fbfb;
+  color: #0f6b6b;
+}
+
+.category-list button.cat-re,
+.cat-badge.cat-re,
+.chip.cat-re {
+  border-color: #e5c35f;
+  background: #fff8df;
+  color: #8a6a00;
+}
+
+.category-list button.cat-pwn,
+.cat-badge.cat-pwn,
+.chip.cat-pwn {
+  border-color: #b996ff;
+  background: #f5edff;
+  color: #5f35b5;
+}
+
+.category-list button.cat-misc,
+.cat-badge.cat-misc,
+.chip.cat-misc {
+  border-color: #95b7d8;
+  background: #edf5fd;
+  color: #2e5f91;
+}
+
+.category-list button.cat-ai,
+.cat-badge.cat-ai,
+.chip.cat-ai {
+  border-color: #7fcfa5;
+  background: #ebfbf2;
+  color: #1b7a49;
+}
+
+.category-list button.cat-crypto,
+.cat-badge.cat-crypto,
+.chip.cat-crypto {
+  border-color: #89a0ff;
+  background: #eef1ff;
+  color: #2d43a8;
+}
+
+.category-list button.cat-forensics,
+.cat-badge.cat-forensics,
+.chip.cat-forensics {
+  border-color: #ffb48f;
+  background: #fff2eb;
+  color: #a14a1e;
+}
+
+.category-list button.cat-mobile,
+.cat-badge.cat-mobile,
+.chip.cat-mobile {
+  border-color: #8fd6b5;
+  background: #ecfdf5;
+  color: #156746;
+}
+
+.category-list button.cat-blockchain,
+.cat-badge.cat-blockchain,
+.chip.cat-blockchain {
+  border-color: #b0b9ff;
+  background: #f1f3ff;
+  color: #3946a4;
+}
+
+.category-list button.cat-hardware,
+.cat-badge.cat-hardware,
+.chip.cat-hardware {
+  border-color: #d2b48c;
+  background: #fbf2e8;
+  color: #7b5122;
 }
 
 .file-list {
@@ -318,6 +418,12 @@ body {
   }
 
   .inline-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1200px) {
+  .add-section-grid {
     grid-template-columns: 1fr;
   }
 }

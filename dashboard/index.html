@@ -4,12 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CTF 题库面板</title>
-  <link rel="stylesheet" href="/dashboard/css/styles.css?v=20260302" />
+  <link rel="stylesheet" href="/dashboard/css/styles.css?v=20260302c" />
 </head>
 <body>
   <header class="topbar">
     <h1>CTF 题库面板</h1>
-    <div id="stats" class="stats">加载中...</div>
+    <div class="topbar-actions">
+      <a class="top-link" href="#add-tools">添加题目/WP</a>
+      <div id="stats" class="stats">加载中...</div>
+    </div>
   </header>
 
   <main class="layout">
@@ -36,76 +39,109 @@
     </section>
 
     <section class="detail-panel">
-      <div class="panel-title">添加题目/WP</div>
-      <div class="add-panel-body">
-        <form id="intake-form" class="mini-form">
-          <div class="mini-form-title">新题入库</div>
-          <label>
-            题目文件
-            <input id="intake-file" type="file" name="challenge" required />
-          </label>
-          <div class="inline-row">
-            <label>
-              比赛名
-              <input id="intake-event" type="text" name="event" placeholder="NSSCTF" />
-            </label>
-            <label>
-              年份
-              <input id="intake-year" type="text" name="year" placeholder="2026" />
-            </label>
-          </div>
-          <button type="submit">添加题目</button>
-        </form>
-
-        <form id="artifact-form" class="mini-form">
-          <div class="mini-form-title">追加 WP/脚本</div>
-          <div class="inline-row">
-            <label>
-              类型
-              <select id="artifact-kind" name="kind" required>
-                <option value="wp">wp</option>
-                <option value="script">script</option>
-                <option value="patch">patch</option>
-                <option value="note">note</option>
-                <option value="file">file</option>
-              </select>
-            </label>
-            <label>
-              状态
-              <select id="artifact-status" name="status">
-                <option value="">不修改</option>
-                <option value="todo">todo</option>
-                <option value="in_progress">in_progress</option>
-                <option value="done">done</option>
-              </select>
-            </label>
-          </div>
-          <label>
-            文件
-            <input id="artifact-file" type="file" name="artifact" required />
-          </label>
-          <label>
-            指定 case（可选，不填默认当前题）
-            <input id="artifact-case" type="text" name="case" placeholder="re/native-windows/p01" />
-          </label>
-          <button type="submit">添加 WP/脚本</button>
-        </form>
-
-        <div class="mini-actions">
-          <button id="refresh-current-btn" type="button">刷新当前题</button>
-          <button id="rebuild-btn" type="button">重建索引</button>
-        </div>
-
-        <pre id="current-box" class="workflow-output">当前题目：加载中...</pre>
-        <pre id="log-box" class="workflow-output">操作日志：</pre>
-
-        <div id="case-detail" class="case-detail compact-detail">
-          <p>点左侧题目可预览 WP。选中后会自动填充到“指定 case”。</p>
-        </div>
+      <div class="panel-title">题目详情 / WP</div>
+      <div id="case-detail" class="case-detail">
+        <p>请选择左侧题目查看详情。</p>
       </div>
     </section>
   </main>
 
-  <script type="module" src="/dashboard/js/main.js?v=20260302"></script>
+  <section id="add-tools" class="add-section">
+    <div class="add-section-title">添加题目/WP</div>
+    <div class="add-section-grid">
+      <form id="intake-form" class="mini-form">
+        <div class="mini-form-title">新题入库</div>
+        <label>
+          题目文件
+          <input id="intake-file" type="file" name="challenge" required />
+        </label>
+        <div class="inline-row">
+          <label>
+            比赛名
+            <input id="intake-event" type="text" name="event" placeholder="NSSCTF" />
+          </label>
+          <label>
+            年份
+            <input id="intake-year" type="text" name="year" placeholder="2026" />
+          </label>
+        </div>
+        <div class="inline-row">
+          <label>
+            大类
+            <select id="intake-category" name="category">
+              <option value="auto">auto（自动识别）</option>
+            </select>
+          </label>
+          <label>
+            子类
+            <select id="intake-subcategory" name="subcategory" disabled>
+              <option value="">自动选择</option>
+            </select>
+          </label>
+        </div>
+        <div class="inline-row">
+          <label>
+            题目显示名（可选）
+            <input id="intake-name" type="text" name="name" placeholder="p01" />
+          </label>
+          <label>
+            难度（可选）
+            <input id="intake-difficulty" type="text" name="difficulty" placeholder="easy / medium / hard" />
+          </label>
+        </div>
+        <label>
+          标签（可选，逗号分隔）
+          <input id="intake-tags" type="text" name="tags" placeholder="ida, windows, crackme" />
+        </label>
+        <button type="submit">添加题目</button>
+      </form>
+
+      <form id="artifact-form" class="mini-form">
+        <div class="mini-form-title">追加 WP/脚本</div>
+        <div class="inline-row">
+          <label>
+            类型
+            <select id="artifact-kind" name="kind" required>
+              <option value="wp">wp</option>
+              <option value="script">script</option>
+              <option value="patch">patch</option>
+              <option value="note">note</option>
+              <option value="file">file</option>
+            </select>
+          </label>
+          <label>
+            状态
+            <select id="artifact-status" name="status">
+              <option value="">不修改</option>
+              <option value="todo">todo</option>
+              <option value="in_progress">in_progress</option>
+              <option value="done">done</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          文件
+          <input id="artifact-file" type="file" name="artifact" required />
+        </label>
+        <label>
+          指定 case（可选，不填默认当前题）
+          <input id="artifact-case" type="text" name="case" placeholder="re/native-windows/p01" />
+        </label>
+        <button type="submit">添加 WP/脚本</button>
+      </form>
+
+      <div class="mini-form">
+        <div class="mini-form-title">当前题与维护</div>
+        <div class="mini-actions">
+          <button id="refresh-current-btn" type="button">刷新当前题</button>
+          <button id="rebuild-btn" type="button">重建索引</button>
+        </div>
+        <pre id="current-box" class="workflow-output">当前题目：加载中...</pre>
+        <pre id="log-box" class="workflow-output">操作日志：</pre>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="/dashboard/js/main.js?v=20260302c"></script>
 </body>
 </html>
