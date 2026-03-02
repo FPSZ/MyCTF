@@ -51,44 +51,29 @@ export function renderCaseList(node, cases, onSelect) {
 
 export function renderCaseDetail(node, item, wpText) {
   if (!item) {
-    node.innerHTML = "<p>请选择左侧题目查看详情。</p>";
+    node.innerHTML = "<p>点左侧题目可预览内容。</p>";
     return;
   }
 
-  const tags = (item.tags || []).map((t) => `<span class="chip">${esc(t)}</span>`).join("");
+  const tags = (item.tags || []).slice(0, 6).map((t) => `<span class="chip">${esc(t)}</span>`).join("");
   const statusClass = `status-${(item.status || "todo").replace(/\s+/g, "_")}`;
-
-  const wpFiles = (item.wp_files || [])
-    .map((f) => `<li><code>${esc(f)}</code></li>`)
-    .join("");
-  const scriptFiles = (item.script_files || [])
-    .map((f) => `<li><code>${esc(f)}</code></li>`)
-    .join("");
-  const challengeFiles = (item.challenge_files || [])
-    .map((f) => `<li><code>${esc(f)}</code></li>`)
-    .join("");
+  const wpCount = (item.wp_files || []).length;
+  const scriptCount = (item.script_files || []).length;
+  const challengeCount = (item.challenge_files || []).length;
 
   node.innerHTML = `
-    <h2>${esc(item.name)}</h2>
+    <h3>${esc(item.name)}</h3>
     <p>
       <span class="chip">${esc(item.category)}/${esc(item.subcategory)}</span>
       <span class="chip ${statusClass}">${esc(item.status || "todo")}</span>
       ${tags}
     </p>
     <p><b>Event:</b> ${esc(item.event || "-")} | <b>Year:</b> ${esc(item.year || "-")} | <b>Difficulty:</b> ${esc(item.difficulty || "-")}</p>
-    <p><b>Case Path:</b> <code>${esc(item.path)}</code></p>
-
-    <h3>Challenge Files</h3>
-    <ul class="file-list">${challengeFiles || "<li>无</li>"}</ul>
-
-    <h3>Scripts</h3>
-    <ul class="file-list">${scriptFiles || "<li>无</li>"}</ul>
-
-    <h3>WP Files</h3>
-    <ul class="file-list">${wpFiles || "<li>无</li>"}</ul>
+    <p><b>文件统计:</b> Challenge ${challengeCount} / Script ${scriptCount} / WP ${wpCount}</p>
+    <p><b>Case:</b> <code>${esc(item.id || item.path || "-")}</code></p>
 
     <div class="wp-viewer">
-      <div class="wp-viewer-header">WP 预览（首个 WP 文件）</div>
+      <div class="wp-viewer-header">WP 预览</div>
       <pre class="wp-viewer-content">${esc(wpText || item.wp_preview || "暂无 WP 内容")}</pre>
     </div>
   `;

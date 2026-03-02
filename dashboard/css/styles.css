@@ -172,10 +172,76 @@ body {
   flex-direction: column;
 }
 
+.add-panel-body {
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+  overflow: auto;
+  max-height: calc(100vh - 110px);
+}
+
+.mini-form {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.mini-form-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mini-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.mini-form input,
+.mini-form select,
+.mini-form button,
+.mini-actions button {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.mini-form button,
+.mini-actions button {
+  cursor: pointer;
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.inline-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mini-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
 .case-detail {
   padding: 12px;
   overflow: auto;
   max-height: calc(100vh - 110px);
+}
+
+.compact-detail {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  max-height: 320px;
 }
 
 .chip {
@@ -249,6 +315,10 @@ body {
       "sidebar"
       "list"
       "detail";
+  }
+
+  .inline-row {
+    grid-template-columns: 1fr;
   }
 }
 

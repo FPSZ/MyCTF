@@ -8,19 +8,18 @@
 先启动服务：
 
 ```bat
-tools\serve_dashboard.cmd 8090
+tools\open_dashboard.cmd 8090
 ```
 
 然后打开：
 
-- 一键流程页：`http://127.0.0.1:8090/dashboard/workflow.html`
-- 题库查看页：`http://127.0.0.1:8090/dashboard/index.html`
+- 题库面板：`http://127.0.0.1:8090/dashboard/index.html`
 
-在“一键流程页”里你可以直接：
+在题库面板中：
 
-1. 资源管理器选题目文件 -> 点“一键入库”
-2. 资源管理器选 WP/脚本 -> 点“追加产物”
-3. 点“重建索引”（可选，通常会自动更新）
+1. 左侧看题目列表
+2. 右侧 `添加题目/WP` 区域直接选文件并提交
+3. 点击题目列表时会自动填充 case，便于追加 WP/脚本
 
 ## 1. 新人只看这 6 步（Windows，命令行）
 

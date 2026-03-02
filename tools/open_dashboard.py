@@ -41,11 +41,11 @@ def main() -> int:
     args = parser.parse_args()
 
     module = load_ctf_bank_module()
-    url = f"http://localhost:{args.port}/dashboard/workflow.html"
+    url = f"http://localhost:{args.port}/dashboard/index.html"
     probe = f"http://127.0.0.1:{args.port}/api/current"
 
     print(f"[INFO] starting server at {args.host}:{args.port}")
-    print(f"[INFO] workflow ui: {url}")
+    print(f"[INFO] dashboard ui: {url}")
 
     opener = threading.Thread(target=open_when_ready, args=(url, probe), daemon=True)
     opener.start()
