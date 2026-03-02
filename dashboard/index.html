@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CTF 题库面板</title>
-  <link rel="stylesheet" href="/dashboard/css/styles.css?v=20260302d" />
+  <link rel="stylesheet" href="/dashboard/css/styles.css?v=20260302z3" />
 </head>
 <body>
   <header class="topbar">
@@ -26,9 +26,24 @@
         <input id="search-input" type="text" placeholder="搜索题名 / event / tag" />
         <select id="status-filter">
           <option value="">全部状态</option>
-          <option value="todo">todo</option>
-          <option value="in_progress">in_progress</option>
-          <option value="done">done</option>
+          <option value="todo">待做</option>
+          <option value="in_progress">进行中</option>
+          <option value="done">已解决</option>
+        </select>
+        <select id="difficulty-filter">
+          <option value="">全部难度</option>
+          <option value="0">未评星</option>
+          <option value="1">⭐✩✩✩✩（1 星）</option>
+          <option value="2">⭐⭐✩✩✩（2 星）</option>
+          <option value="3">⭐⭐⭐✩✩（3 星）</option>
+          <option value="4">⭐⭐⭐⭐✩（4 星）</option>
+          <option value="5">⭐⭐⭐⭐⭐（5 星）</option>
+        </select>
+        <select id="sort-filter">
+          <option value="default">默认排序</option>
+          <option value="difficulty_desc">难度：高到低</option>
+          <option value="difficulty_asc">难度：低到高</option>
+          <option value="name_asc">题名：A-Z</option>
         </select>
       </section>
     </aside>
@@ -39,7 +54,11 @@
     </section>
 
     <section class="detail-panel">
-      <div class="panel-title">题目详情 / WP</div>
+      <div class="panel-title detail-title">
+        <span class="detail-title-main">题目详情 / WP</span>
+        <span id="detail-title-name" class="detail-title-name">未选择题目</span>
+        <button id="detail-save-btn" class="detail-save-btn" type="button">保存</button>
+      </div>
       <div id="case-detail" class="case-detail">
         <p>请选择左侧题目查看详情。</p>
       </div>
@@ -86,14 +105,21 @@
           </label>
           <label>
             难度（可选）
-            <input id="intake-difficulty" type="text" name="difficulty" placeholder="easy / medium / hard" />
+            <select id="intake-difficulty" name="difficulty">
+              <option value="">未设置</option>
+              <option value="1">⭐✩✩✩✩（1 星）</option>
+              <option value="2">⭐⭐✩✩✩（2 星）</option>
+              <option value="3">⭐⭐⭐✩✩（3 星）</option>
+              <option value="4">⭐⭐⭐⭐✩（4 星）</option>
+              <option value="5">⭐⭐⭐⭐⭐（5 星）</option>
+            </select>
           </label>
         </div>
         <label>
           标签（可选，逗号分隔）
           <input id="intake-tags" type="text" name="tags" placeholder="ida, windows, crackme" />
         </label>
-        <button type="submit">添加题目</button>
+        <button class="submit-main" type="submit">添加题目</button>
       </form>
 
       <form id="artifact-form" class="mini-form">
@@ -113,9 +139,9 @@
             状态
             <select id="artifact-status" name="status">
               <option value="">不修改</option>
-              <option value="todo">todo</option>
-              <option value="in_progress">in_progress</option>
-              <option value="done">done</option>
+              <option value="todo">待做</option>
+              <option value="in_progress">进行中</option>
+              <option value="done">已解决</option>
             </select>
           </label>
         </div>
@@ -127,7 +153,7 @@
           指定 case（可选，不填默认当前题）
           <input id="artifact-case" type="text" name="case" placeholder="re/native-windows/p01" />
         </label>
-        <button type="submit">添加 WP/脚本</button>
+        <button class="submit-main" type="submit">添加 WP/脚本</button>
       </form>
 
       <div class="mini-form">
@@ -142,6 +168,6 @@
     </div>
   </section>
 
-  <script type="module" src="/dashboard/js/main.js?v=20260302d"></script>
+  <script type="module" src="/dashboard/js/main.js?v=20260302z3"></script>
 </body>
 </html>

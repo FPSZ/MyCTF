@@ -60,3 +60,39 @@ export async function rebuildCatalogIndex() {
   });
   return parseJson(resp);
 }
+
+export async function saveWpText(payload) {
+  const resp = await fetch("/api/wp-save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseJson(resp);
+}
+
+export async function saveCaseMeta(payload) {
+  const resp = await fetch("/api/case-update", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseJson(resp);
+}
+
+export async function openCaseFolder(payload) {
+  const resp = await fetch("/api/open-case", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseJson(resp);
+}
+
+export async function saveArtifactText(payload) {
+  const resp = await fetch("/api/artifact-save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseJson(resp);
+}

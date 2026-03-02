@@ -15,8 +15,11 @@ from __future__ import annotations
 import argparse
 import cgi
 import json
+import os
 import re
 import shutil
+import subprocess
+import sys
 import tempfile
 from datetime import datetime
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
@@ -335,6 +338,136 @@ def add_artifact(args: argparse.Namespace) -> int:
     return 0
 
 
+def save_wp_content(case_ref: str, text: str, filename: str | None = None) -> dict:
+    case_dir = find_case(case_ref)
+    if not case_dir:
+        raise ValueError(f"case not found: {case_ref}")
+
+    wp_dir = case_dir / "wp"
+    wp_dir.mkdir(parents=True, exist_ok=True)
+
+    target_name = Path(filename).name if filename else ""
+    if not target_name:
+        existing = sorted([p for p in wp_dir.glob("*") if p.is_file()])
+        target_name = existing[0].name if existing else "WP.md"
+
+    target = wp_dir / target_name
+    if not target.suffix:
+        target = target.with_suffix(".md")
+
+    target.write_text(text, encoding="utf-8")
+
+    md_path = case_dir / "metadata.json"
+    data = read_json(md_path)
+    data["updated_at"] = now_iso()
+    write_json(md_path, data)
+    set_current_case(data.get("id", case_dir.relative_to(BANK_ROOT).as_posix()), case_dir)
+    rebuild_catalog(verbose=False)
+
+    return {
+        "path": target.relative_to(BANK_ROOT).as_posix(),
+        "current": case_brief(case_dir),
+    }
+
+
+def save_text_artifact(case_ref: str, kind: str, text: str, filename: str | None = None) -> dict:
+    case_dir = find_case(case_ref)
+    if not case_dir:
+        raise ValueError(f"case not found: {case_ref}")
+
+    kind_map = {
+        "wp": ("wp", ".md"),
+        "script": ("scripts", ".py"),
+    }
+    if kind not in kind_map:
+        raise ValueError("invalid kind")
+
+    subdir, default_ext = kind_map[kind]
+    dst_dir = case_dir / subdir
+    dst_dir.mkdir(parents=True, exist_ok=True)
+
+    raw_name = Path(filename).name if filename else ""
+    if not raw_name:
+        existing = sorted([p for p in dst_dir.glob("*") if p.is_file()])
+        if existing:
+            raw_name = existing[0].name
+        else:
+            raw_name = "WP.md" if kind == "wp" else "script.py"
+
+    target = dst_dir / raw_name
+    if not target.suffix:
+        target = target.with_suffix(default_ext)
+
+    target.write_text(text, encoding="utf-8")
+
+    md_path = case_dir / "metadata.json"
+    data = read_json(md_path)
+    data["updated_at"] = now_iso()
+    write_json(md_path, data)
+    set_current_case(data.get("id", case_dir.relative_to(BANK_ROOT).as_posix()), case_dir)
+    rebuild_catalog(verbose=False)
+
+    return {
+        "path": target.relative_to(BANK_ROOT).as_posix(),
+        "current": case_brief(case_dir),
+    }
+
+
+def update_case_metadata(case_ref: str, updates: dict) -> dict:
+    case_dir = find_case(case_ref)
+    if not case_dir:
+        raise ValueError(f"case not found: {case_ref}")
+
+    md_path = case_dir / "metadata.json"
+    data = read_json(md_path)
+
+    status = str(updates.get("status", data.get("status", "todo"))).strip().lower()
+    if status not in {"todo", "in_progress", "done"}:
+        raise ValueError("invalid status")
+
+    name = str(updates.get("name", data.get("name", ""))).strip()
+    if not name:
+        raise ValueError("name cannot be empty")
+
+    data["name"] = name
+    data["event"] = str(updates.get("event", data.get("event", ""))).strip()
+    data["year"] = str(updates.get("year", data.get("year", ""))).strip()
+    data["difficulty"] = str(updates.get("difficulty", data.get("difficulty", ""))).strip()
+    data["status"] = status
+    data["tags"] = parse_tags(updates.get("tags", data.get("tags", [])))
+    data["updated_at"] = now_iso()
+
+    write_json(md_path, data)
+    set_current_case(data.get("id", case_dir.relative_to(BANK_ROOT).as_posix()), case_dir)
+    rebuild_catalog(verbose=False)
+    return {"current": case_brief(case_dir)}
+
+
+def open_case_folder(case_ref: str) -> dict:
+    case_dir = find_case(case_ref)
+    if not case_dir:
+        raise ValueError(f"case not found: {case_ref}")
+
+    target = str(case_dir.resolve())
+    try:
+        if sys.platform.startswith("win"):
+            explorer = Path(os.environ.get("WINDIR", r"C:\Windows")) / "explorer.exe"
+            if explorer.exists():
+                subprocess.Popen([str(explorer), target], close_fds=True)
+            else:
+                os.startfile(target)  # type: ignore[attr-defined]
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", target], close_fds=True)
+        else:
+            subprocess.Popen(["xdg-open", target], close_fds=True)
+    except Exception as exc:
+        raise ValueError(f"open folder failed: {exc}") from exc
+
+    md = read_json(case_dir / "metadata.json")
+    set_current_case(md.get("id", case_dir.relative_to(BANK_ROOT).as_posix()), case_dir)
+    return {"current": case_brief(case_dir), "path": case_dir.relative_to(BANK_ROOT).as_posix()}
+
+
 def show_current_case(_args: argparse.Namespace) -> int:
     case_dir = get_current_case()
     if not case_dir:
@@ -494,6 +627,14 @@ class CTFBankHTTPRequestHandler(SimpleHTTPRequestHandler):
                 return self._handle_intake_upload()
             if path == "/api/add-upload":
                 return self._handle_add_upload()
+            if path == "/api/case-update":
+                return self._handle_case_update()
+            if path == "/api/wp-save":
+                return self._handle_wp_save()
+            if path == "/api/artifact-save":
+                return self._handle_artifact_save()
+            if path == "/api/open-case":
+                return self._handle_open_case()
             if path == "/api/rebuild":
                 rebuild_catalog(verbose=False)
                 self._send_json(200, {"ok": True})
@@ -607,6 +748,76 @@ class CTFBankHTTPRequestHandler(SimpleHTTPRequestHandler):
             {
                 "ok": True,
                 "current": case_brief(get_current_case()),
+            },
+        )
+
+    def _handle_wp_save(self) -> None:
+        data = self._read_json_body()
+        case_ref = str(data.get("case", "")).strip()
+        if not case_ref:
+            raise ValueError("case is required")
+
+        text = str(data.get("text", ""))
+        filename = str(data.get("filename", "")).strip() or None
+        result = save_wp_content(case_ref, text, filename)
+
+        self._send_json(
+            200,
+            {
+                "ok": True,
+                "path": result["path"],
+                "current": result["current"],
+            },
+        )
+
+    def _handle_case_update(self) -> None:
+        data = self._read_json_body()
+        case_ref = str(data.get("case", "")).strip()
+        if not case_ref:
+            raise ValueError("case is required")
+
+        result = update_case_metadata(case_ref, data)
+        self._send_json(
+            200,
+            {
+                "ok": True,
+                "current": result["current"],
+            },
+        )
+
+    def _handle_artifact_save(self) -> None:
+        data = self._read_json_body()
+        case_ref = str(data.get("case", "")).strip()
+        if not case_ref:
+            raise ValueError("case is required")
+
+        kind = str(data.get("kind", "")).strip().lower()
+        filename = str(data.get("filename", "")).strip() or None
+        text = str(data.get("text", ""))
+        result = save_text_artifact(case_ref, kind, text, filename)
+
+        self._send_json(
+            200,
+            {
+                "ok": True,
+                "path": result["path"],
+                "current": result["current"],
+            },
+        )
+
+    def _handle_open_case(self) -> None:
+        data = self._read_json_body()
+        case_ref = str(data.get("case", "")).strip()
+        if not case_ref:
+            raise ValueError("case is required")
+
+        result = open_case_folder(case_ref)
+        self._send_json(
+            200,
+            {
+                "ok": True,
+                "current": result["current"],
+                "path": result["path"],
             },
         )
 

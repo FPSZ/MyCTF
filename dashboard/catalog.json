@@ -1,8 +1,36 @@
 {
   "stats": {
-    "total_cases": 0,
-    "by_category": {},
-    "updated_at": "2026-03-02T11:20:33"
+    "total_cases": 1,
+    "by_category": {
+      "re": 1
+    },
+    "updated_at": "2026-03-02T13:23:08"
   },
-  "cases": []
+  "cases": [
+    {
+      "id": "re/native-windows/p01",
+      "name": "p01",
+      "slug": "p01",
+      "category": "re",
+      "subcategory": "native-windows",
+      "event": "NSSCTF",
+      "year": "2022",
+      "difficulty": "1",
+      "status": "done",
+      "tags": [
+        "签到题"
+      ],
+      "path": "re/native-windows/p01",
+      "created_at": "2026-03-02T11:33:33",
+      "updated_at": "2026-03-02T13:23:08",
+      "wp_files": [
+        "re/native-windows/p01/wp/WP.md"
+      ],
+      "wp_preview": "IDA直接看",
+      "script_files": [],
+      "challenge_files": [
+        "re/native-windows/p01/challenge/p01.exe"
+      ]
+    }
+  ]
 }

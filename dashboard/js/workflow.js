@@ -8,6 +8,13 @@ const els = {
   logBox: document.getElementById("log-box"),
 };
 
+function statusLabel(status = "") {
+  const raw = String(status).trim().toLowerCase();
+  if (raw === "done") return "已解决";
+  if (raw === "in_progress" || raw === "in-progress") return "进行中";
+  return "待做";
+}
+
 function nowTime() {
   return new Date().toLocaleTimeString();
 }
@@ -40,7 +47,7 @@ function renderCurrent(current) {
     `id: ${current.id}`,
     `name: ${current.name || "-"}`,
     `category: ${current.category || "-"}/${current.subcategory || "-"}`,
-    `status: ${current.status || "-"}`,
+    `status: ${statusLabel(current.status || "")}`,
     `path: ${current.path || "-"}`,
   ].join("\n");
 }

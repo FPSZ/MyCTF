@@ -1,0 +1,17 @@
+{
+  "id": "re/native-windows/p01",
+  "name": "p01",
+  "slug": "p01",
+  "category": "re",
+  "subcategory": "native-windows",
+  "event": "NSSCTF",
+  "year": "2022",
+  "difficulty": "1",
+  "status": "done",
+  "tags": [
+    "签到题"
+  ],
+  "created_at": "2026-03-02T11:33:33",
+  "updated_at": "2026-03-02T13:23:08",
+  "source_ref": "p01.exe"
+}
