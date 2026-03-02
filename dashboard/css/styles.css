@@ -6,6 +6,7 @@
   --muted: #5e6b85;
   --accent: #1f7ae0;
   --accent-soft: #e6f0ff;
+  --action-h: 46px;
 }
 
 * {
@@ -225,6 +226,9 @@ body {
   color: #fff;
   border-color: var(--accent);
   font-weight: 600;
+  height: var(--action-h);
+  min-height: var(--action-h);
+  padding: 0 12px;
 }
 
 .inline-row {
@@ -235,7 +239,7 @@ body {
 
 .mini-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
