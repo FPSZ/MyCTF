@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CTF 一键流程</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>CTF 一键流程</h1>
+    <div class="topbar-actions">
+      <a class="top-link" href="./index.html">返回题库面板</a>
+    </div>
+  </header>
+
+  <main class="workflow-layout">
+    <section class="workflow-card">
+      <h2>1) 新题入库（推荐：资源管理器选文件）</h2>
+      <form id="intake-upload-form" class="workflow-form">
+        <label>
+          题目文件
+          <input type="file" name="challenge" required />
+        </label>
+        <label>
+          比赛名
+          <input type="text" name="event" placeholder="NSSCTF" />
+        </label>
+        <label>
+          年份
+          <input type="text" name="year" placeholder="2026" />
+        </label>
+        <label>
+          题目显示名（可选）
+          <input type="text" name="name" placeholder="p01" />
+        </label>
+        <label>
+          难度（可选）
+          <input type="text" name="difficulty" placeholder="easy / medium / hard" />
+        </label>
+        <label>
+          标签（可选，逗号分隔）
+          <input type="text" name="tags" placeholder="ida, windows, crackme" />
+        </label>
+        <button type="submit">一键入库</button>
+      </form>
+      <p class="hint">说明：上传后会自动分类并设为“当前题目”。</p>
+    </section>
+
+    <section class="workflow-card">
+      <h2>2) 或者直接填本机路径入库（可选）</h2>
+      <form id="intake-path-form" class="workflow-form">
+        <label>
+          题目路径
+          <input type="text" name="source" placeholder="D:\CTF\题目\逆向\...\p01.exe" required />
+        </label>
+        <label>
+          比赛名
+          <input type="text" name="event" placeholder="NSSCTF" />
+        </label>
+        <label>
+          年份
+          <input type="text" name="year" placeholder="2026" />
+        </label>
+        <button type="submit">按路径入库</button>
+      </form>
+    </section>
+
+    <section class="workflow-card">
+      <h2>3) 给当前题追加产物（WP/脚本等）</h2>
+      <form id="add-artifact-form" class="workflow-form">
+        <label>
+          类型
+          <select name="kind" required>
+            <option value="wp">wp</option>
+            <option value="script">script</option>
+            <option value="patch">patch</option>
+            <option value="note">note</option>
+            <option value="file">file</option>
+          </select>
+        </label>
+        <label>
+          文件
+          <input type="file" name="artifact" required />
+        </label>
+        <label>
+          状态（可选）
+          <select name="status">
+            <option value="">不修改</option>
+            <option value="todo">todo</option>
+            <option value="in_progress">in_progress</option>
+            <option value="done">done</option>
+          </select>
+        </label>
+        <label>
+          指定 case（可选，不填则使用当前题）
+          <input type="text" name="case" placeholder="re/native-windows/p01" />
+        </label>
+        <button type="submit">追加产物</button>
+      </form>
+    </section>
+
+    <section class="workflow-card">
+      <h2>4) 当前题与维护操作</h2>
+      <div class="workflow-actions">
+        <button id="refresh-current-btn" type="button">刷新当前题</button>
+        <button id="rebuild-btn" type="button">重建索引</button>
+      </div>
+      <pre id="current-box" class="workflow-output">加载中...</pre>
+      <pre id="log-box" class="workflow-output">操作日志：</pre>
+    </section>
+  </main>
+
+  <script type="module" src="./js/workflow.js"></script>
+</body>
+</html>

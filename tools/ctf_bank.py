@@ -13,20 +13,23 @@ Usage examples:
 from __future__ import annotations
 
 import argparse
+import cgi
 import json
-import os
 import re
 import shutil
+import tempfile
 from datetime import datetime
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from typing import Iterable
+from urllib.parse import urlparse
 
 
 BANK_ROOT = Path(__file__).resolve().parents[1]
 DASHBOARD_DIR = BANK_ROOT / "dashboard"
 CATALOG_FILE = DASHBOARD_DIR / "catalog.json"
 CURRENT_CASE_FILE = BANK_ROOT / "tools" / ".current_case.json"
+MAX_UPLOAD_BYTES = 512 * 1024 * 1024  # 512 MB
 
 CATEGORY_TREE: dict[str, list[str]] = {
     "web": [
@@ -158,6 +161,14 @@ def make_source_ref(source: Path) -> str:
         return source.name
 
 
+def parse_tags(tags: list[str] | str | None) -> list[str]:
+    if not tags:
+        return []
+    if isinstance(tags, list):
+        return [str(t).strip() for t in tags if str(t).strip()]
+    return [t.strip() for t in re.split(r"[,\s]+", str(tags)) if t.strip()]
+
+
 def set_current_case(case_id: str, case_dir: Path) -> None:
     payload = {
         "id": case_id,
@@ -240,7 +251,7 @@ def create_case(args: argparse.Namespace) -> int:
         "year": args.year or "",
         "difficulty": args.difficulty or "",
         "status": "todo",
-        "tags": args.tags or [],
+        "tags": parse_tags(args.tags),
         "created_at": now_iso(),
         "updated_at": now_iso(),
         "source_ref": args.source_ref or make_source_ref(source),
@@ -333,6 +344,271 @@ def show_current_case(_args: argparse.Namespace) -> int:
     print(f"[OK] current case id: {md.get('id', '-')}")
     print(f"[OK] current case path: {case_dir}")
     return 0
+
+
+def case_brief(case_dir: Path | None) -> dict:
+    if not case_dir or not (case_dir / "metadata.json").exists():
+        return {"id": "", "name": "", "path": "", "category": "", "subcategory": "", "status": ""}
+    md = read_json(case_dir / "metadata.json")
+    return {
+        "id": md.get("id", ""),
+        "name": md.get("name", ""),
+        "path": case_dir.relative_to(BANK_ROOT).as_posix(),
+        "category": md.get("category", ""),
+        "subcategory": md.get("subcategory", ""),
+        "status": md.get("status", "todo"),
+    }
+
+
+class CTFBankHTTPRequestHandler(SimpleHTTPRequestHandler):
+    def _send_json(self, status_code: int, payload: dict) -> None:
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status_code)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _read_json_body(self) -> dict:
+        raw_len = self.headers.get("Content-Length", "0")
+        try:
+            content_len = int(raw_len)
+        except ValueError as exc:
+            raise ValueError("invalid content length") from exc
+        if content_len <= 0:
+            return {}
+        raw = self.rfile.read(content_len)
+        if not raw:
+            return {}
+        try:
+            return json.loads(raw.decode("utf-8"))
+        except json.JSONDecodeError as exc:
+            raise ValueError("invalid json body") from exc
+
+    def _parse_multipart_form(self) -> cgi.FieldStorage:
+        ctype = self.headers.get("Content-Type", "")
+        if "multipart/form-data" not in ctype:
+            raise ValueError("content-type must be multipart/form-data")
+
+        raw_len = self.headers.get("Content-Length", "0")
+        try:
+            content_len = int(raw_len)
+        except ValueError as exc:
+            raise ValueError("invalid content length") from exc
+
+        if content_len <= 0:
+            raise ValueError("empty request body")
+        if content_len > MAX_UPLOAD_BYTES:
+            raise ValueError(f"payload too large (>{MAX_UPLOAD_BYTES} bytes)")
+
+        env = {
+            "REQUEST_METHOD": "POST",
+            "CONTENT_TYPE": ctype,
+            "CONTENT_LENGTH": str(content_len),
+        }
+        return cgi.FieldStorage(
+            fp=self.rfile,
+            headers=self.headers,
+            environ=env,
+            keep_blank_values=True,
+        )
+
+    @staticmethod
+    def _form_value(form: cgi.FieldStorage, key: str, default: str = "") -> str:
+        if key not in form:
+            return default
+        field = form[key]
+        if isinstance(field, list):
+            field = field[0]
+        value = getattr(field, "value", "")
+        if value is None:
+            return default
+        return str(value).strip()
+
+    @staticmethod
+    def _form_file(form: cgi.FieldStorage, key: str) -> cgi.FieldStorage | None:
+        if key not in form:
+            return None
+        field = form[key]
+        if isinstance(field, list):
+            field = field[0]
+        filename = getattr(field, "filename", "")
+        if not filename:
+            return None
+        return field
+
+    @staticmethod
+    def _save_upload_to_temp(upload: cgi.FieldStorage, fallback_name: str = "upload.bin") -> Path:
+        filename = Path(upload.filename or fallback_name).name
+        if not filename:
+            filename = fallback_name
+        temp_dir = Path(tempfile.mkdtemp(prefix="ctf-bank-upload-"))
+        temp_path = temp_dir / filename
+        with temp_path.open("wb") as f:
+            shutil.copyfileobj(upload.file, f)
+        return temp_path
+
+    @staticmethod
+    def _cleanup_temp_upload(temp_path: Path) -> None:
+        try:
+            if temp_path.exists():
+                temp_path.unlink()
+        except Exception:
+            pass
+        try:
+            if temp_path.parent.name.startswith("ctf-bank-upload-"):
+                shutil.rmtree(temp_path.parent, ignore_errors=True)
+        except Exception:
+            pass
+
+    def do_GET(self) -> None:
+        path = urlparse(self.path).path
+        if path == "/api/current":
+            self._send_json(
+                200,
+                {
+                    "ok": True,
+                    "current": case_brief(get_current_case()),
+                },
+            )
+            return
+        if path == "/api/categories":
+            self._send_json(200, {"ok": True, "categories": CATEGORY_TREE})
+            return
+        return super().do_GET()
+
+    def do_POST(self) -> None:
+        path = urlparse(self.path).path
+        try:
+            if path == "/api/intake-path":
+                return self._handle_intake_path()
+            if path == "/api/intake-upload":
+                return self._handle_intake_upload()
+            if path == "/api/add-upload":
+                return self._handle_add_upload()
+            if path == "/api/rebuild":
+                rebuild_catalog(verbose=False)
+                self._send_json(200, {"ok": True})
+                return
+            self._send_json(404, {"ok": False, "error": "unknown api endpoint"})
+        except Exception as exc:
+            self._send_json(400, {"ok": False, "error": str(exc)})
+
+    def _handle_intake_path(self) -> None:
+        data = self._read_json_body()
+        source = str(data.get("source", "")).strip()
+        if not source:
+            raise ValueError("source path is required")
+
+        category = str(data.get("category", "auto")).strip() or "auto"
+        subcategory = str(data.get("subcategory", "")).strip() or None
+        event = str(data.get("event", "")).strip() or None
+        year = str(data.get("year", "")).strip() or None
+        name = str(data.get("name", "")).strip() or None
+        difficulty = str(data.get("difficulty", "")).strip() or None
+        source_ref = str(data.get("source_ref", "")).strip() or None
+        keep_source_path = bool(data.get("keep_source_path", False))
+        tags = parse_tags(data.get("tags"))
+
+        args = argparse.Namespace(
+            source=source,
+            name=name,
+            category=category,
+            subcategory=subcategory,
+            event=event,
+            year=year,
+            difficulty=difficulty,
+            tags=tags,
+            source_ref=source_ref,
+            keep_source_path=keep_source_path,
+            force=bool(data.get("force", False)),
+        )
+        rc = create_case(args)
+        if rc != 0:
+            raise ValueError("intake failed")
+
+        self._send_json(
+            200,
+            {
+                "ok": True,
+                "current": case_brief(get_current_case()),
+            },
+        )
+
+    def _handle_intake_upload(self) -> None:
+        form = self._parse_multipart_form()
+        challenge_file = self._form_file(form, "challenge")
+        if challenge_file is None:
+            raise ValueError("challenge file is required")
+
+        temp_path = self._save_upload_to_temp(challenge_file, "challenge.bin")
+        try:
+            args = argparse.Namespace(
+                source=str(temp_path),
+                name=self._form_value(form, "name", "") or None,
+                category=self._form_value(form, "category", "auto") or "auto",
+                subcategory=self._form_value(form, "subcategory", "") or None,
+                event=self._form_value(form, "event", "") or None,
+                year=self._form_value(form, "year", "") or None,
+                difficulty=self._form_value(form, "difficulty", "") or None,
+                tags=parse_tags(self._form_value(form, "tags", "")),
+                source_ref=self._form_value(form, "source_ref", "") or Path(challenge_file.filename).name,
+                keep_source_path=False,
+                force=self._form_value(form, "force", "").lower() in {"1", "true", "yes"},
+            )
+            rc = create_case(args)
+            if rc != 0:
+                raise ValueError("intake failed")
+        finally:
+            self._cleanup_temp_upload(temp_path)
+
+        self._send_json(
+            200,
+            {
+                "ok": True,
+                "current": case_brief(get_current_case()),
+            },
+        )
+
+    def _handle_add_upload(self) -> None:
+        form = self._parse_multipart_form()
+        artifact = self._form_file(form, "artifact")
+        if artifact is None:
+            raise ValueError("artifact file is required")
+
+        kind = self._form_value(form, "kind", "")
+        if kind not in {"wp", "script", "patch", "note", "file"}:
+            raise ValueError("invalid kind")
+
+        temp_path = self._save_upload_to_temp(artifact, "artifact.bin")
+        try:
+            args = argparse.Namespace(
+                case=self._form_value(form, "case", "") or None,
+                kind=kind,
+                input=str(temp_path),
+                status=self._form_value(form, "status", "") or None,
+            )
+            rc = add_artifact(args)
+            if rc != 0:
+                raise ValueError("add artifact failed")
+        finally:
+            self._cleanup_temp_upload(temp_path)
+
+        self._send_json(
+            200,
+            {
+                "ok": True,
+                "current": case_brief(get_current_case()),
+            },
+        )
+
+
+def make_http_handler(base_dir: Path):
+    class Handler(CTFBankHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=str(base_dir), **kwargs)
+
+    return Handler
 
 
 def sanitize_metadata(args: argparse.Namespace) -> int:
@@ -430,11 +706,12 @@ def rebuild_catalog(verbose: bool = True) -> dict:
 
 def serve_dashboard(args: argparse.Namespace) -> int:
     rebuild_catalog(verbose=False)
-    os.chdir(str(BANK_ROOT))
     host = args.host
     port = args.port
-    print(f"[OK] serving: http://{host}:{port}/dashboard/index.html")
-    server = ThreadingHTTPServer((host, port), SimpleHTTPRequestHandler)
+    print(f"[OK] serving dashboard: http://{host}:{port}/dashboard/index.html")
+    print(f"[OK] workflow ui:      http://{host}:{port}/dashboard/workflow.html")
+    handler = make_http_handler(BANK_ROOT)
+    server = ThreadingHTTPServer((host, port), handler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
