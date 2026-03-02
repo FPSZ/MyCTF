@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CTF 题库面板</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>CTF 题库面板</h1>
+    <div id="stats" class="stats">加载中...</div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <section>
+        <h2>分类</h2>
+        <ul id="category-list" class="category-list"></ul>
+      </section>
+      <section>
+        <h2>筛选</h2>
+        <input id="search-input" type="text" placeholder="搜索题名 / event / tag" />
+        <select id="status-filter">
+          <option value="">全部状态</option>
+          <option value="todo">todo</option>
+          <option value="in_progress">in_progress</option>
+          <option value="done">done</option>
+        </select>
+      </section>
+    </aside>
+
+    <section class="list-panel">
+      <div class="panel-title">题目列表</div>
+      <ul id="case-list" class="case-list"></ul>
+    </section>
+
+    <section class="detail-panel">
+      <div class="panel-title">题目详情 / WP</div>
+      <div id="case-detail" class="case-detail">
+        <p>请选择左侧题目查看详情。</p>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

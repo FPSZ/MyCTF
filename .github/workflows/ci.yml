@@ -1,0 +1,32 @@
+name: ctf-bank-ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: CLI smoke test
+        run: |
+          python tools/ctf_bank.py --help
+          python tools/ctf_bank.py rebuild
+          python tools/ctf_bank.py sanitize
+
+      - name: Validate catalog.json
+        run: |
+          python -c "import json, pathlib; p = pathlib.Path('dashboard/catalog.json'); data=json.loads(p.read_text(encoding='utf-8')); assert 'stats' in data and 'cases' in data"
